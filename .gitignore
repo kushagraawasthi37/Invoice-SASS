@@ -58,3 +58,7 @@ __pycache__/
 /**/*.js
 /**/*.js.map
 /**/*.d.ts
+
+# Exception: keep config files
+!postcss.config.js
+!frontend/postcss.config.js
