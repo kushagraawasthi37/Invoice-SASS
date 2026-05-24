@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 20% 98%;
+    --foreground: 30 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 10% 10%;
+    --primary: 123 36% 28%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 10% 95%;
+    --secondary-foreground: 30 10% 20%;
+    --muted: 30 10% 95%;
+    --muted-foreground: 30 8% 48%;
+    --accent: 123 36% 95%;
+    --accent-foreground: 123 36% 28%;
+    --destructive: 4 80% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 12% 90%;
+    --input: 30 12% 90%;
+    --ring: 123 36% 28%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 30 10% 7%;
+    --foreground: 30 5% 95%;
+    --card: 30 8% 10%;
+    --card-foreground: 30 5% 95%;
+    --popover: 30 8% 10%;
+    --popover-foreground: 30 5% 95%;
+    --primary: 123 36% 55%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 30 8% 15%;
+    --secondary-foreground: 30 5% 85%;
+    --muted: 30 8% 15%;
+    --muted-foreground: 30 5% 55%;
+    --accent: 123 30% 15%;
+    --accent-foreground: 123 36% 75%;
+    --destructive: 4 80% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 8% 18%;
+    --input: 30 8% 18%;
+    --ring: 123 36% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3 {
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  .font-serif {
+    font-family: 'DM Serif Display', Georgia, serif;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── Premium table styles ─────────────────────────────────── */
+.data-table {
+  @apply w-full text-sm;
+}
+.data-table th {
+  @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground px-4 py-3 text-left border-b bg-muted/30;
+}
+.data-table td {
+  @apply px-4 py-3.5 border-b border-border/50;
+}
+.data-table tr:last-child td {
+  @apply border-b-0;
+}
+.data-table tbody tr {
+  @apply transition-colors hover:bg-muted/30;
+}
+
+/* ── Signature canvas ─────────────────────────────────────── */
+.sig-canvas {
+  touch-action: none;
+  cursor: crosshair;
+  border: 1px dashed hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  background: hsl(var(--card));
+}
+
+/* ── Print styles for invoices ───────────────────────────── */
+@media print {
+  nav, aside, .no-print { display: none !important; }
+}

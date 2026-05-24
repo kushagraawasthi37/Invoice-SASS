@@ -1,0 +1,60 @@
+# Node modules
+node_modules/
+
+# pnpm
+.pnpm/
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+out/
+/.next/
+/.vite/
+.parcel-cache/
+coverage/
+/.nyc_output/
+
+esm/
+cjs/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*.local
+.env.local
+backend/.env
+frontend/.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.iml
+
+# Caches
+.cache/
+.eslintcache
+
+# Misc
+__pycache__/
+/.serverless/
+/.venv/
+
+# Optional: compiled JS
+/**/*.js
+/**/*.js.map
+/**/*.d.ts
