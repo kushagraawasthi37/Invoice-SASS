@@ -2,25 +2,44 @@ import sgMail from '@sendgrid/mail';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
+// Trim all email-related env values — copy-paste into Render dashboard can
+// silently introduce leading/trailing whitespace that causes 400 Bad Request.
+const FROM_EMAIL = env.EMAIL_FROM.trim();
+const FROM_NAME  = env.EMAIL_FROM_NAME.trim();
+
 if (!env.SENDGRID_API_KEY) {
   logger.warn('SENDGRID_API_KEY not set — emails will not be sent');
 } else {
-  sgMail.setApiKey(env.SENDGRID_API_KEY);
-  logger.info('Email driver: SendGrid');
+  sgMail.setApiKey(env.SENDGRID_API_KEY.trim());
+  logger.info('Email driver: SendGrid', { from: FROM_EMAIL });
 }
+
+type SgError = Error & {
+  code?: number;
+  response?: { body?: { errors?: Array<{ message: string; field?: string }> } };
+};
 
 async function send(to: string, subject: string, html: string): Promise<void> {
   if (!env.SENDGRID_API_KEY) {
     logger.warn('Email skipped — no SENDGRID_API_KEY', { to, subject });
     return;
   }
-  await sgMail.send({
-    to,
-    from: { name: env.EMAIL_FROM_NAME, email: env.EMAIL_FROM },
-    subject,
-    html,
-  });
-  logger.debug('Email sent', { to, subject });
+  try {
+    await sgMail.send({ to, from: { name: FROM_NAME, email: FROM_EMAIL }, subject, html });
+    logger.debug('Email sent', { to, subject });
+  } catch (raw: unknown) {
+    const err = raw as SgError;
+    // Log SendGrid's field-level errors so the real cause is visible in Render logs
+    logger.error('SendGrid send failed', {
+      to,
+      from: FROM_EMAIL,
+      subject,
+      statusCode: err.code,
+      sgErrors: err.response?.body?.errors ?? [],
+      message: err.message,
+    });
+    throw err;
+  }
 }
 
 export const emailService = {
