@@ -1,0 +1,22 @@
+services:
+  # ── Frontend (Static Site) ──────────────────────────────────────────────────
+  - type: web
+    name: invoice-sass-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://invoice-sass.onrender.com/api/v1
+
+  # ── Backend (Web Service) ───────────────────────────────────────────────────
+  - type: web
+    name: invoice-sass
+    env: node
+    buildCommand: cd backend && npm install && npx prisma generate && npm run build
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/v1/health
