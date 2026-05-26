@@ -1,29 +1,61 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { Transporter } from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
-const transporter = env.SMTP_HOST
-  ? nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465,
-      auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-    })
-  : nodemailer.createTransport({ jsonTransport: true });
+// ── Transporter factory ────────────────────────────────────────────────────────
+//
+// Use `service: 'gmail'` over manual host/port because:
+//   - It selects port 465 (SSL/TLS) automatically — more reliable on cloud hosts
+//     than port 587 (STARTTLS), which can time out on Render's infrastructure
+//   - No risk of mismatched `secure` flag
+//
+// Timeouts are mandatory for production: without them a stalled SMTP connection
+// hangs the request indefinitely (Render's default request timeout will kill it,
+// but the node process keeps the socket open until process restart).
 
-async function send(to: string, subject: string, html: string): Promise<void> {
-  try {
-    await transporter.sendMail({
-      from: `"${env.EMAIL_FROM_NAME}" <${env.EMAIL_FROM}>`,
-      to,
-      subject,
-      html,
-    });
-  } catch (err) {
-    logger.error('Email send failed', { to, subject, err });
+function createTransporter(): Transporter {
+  if (!env.SMTP_USER || !env.SMTP_PASS) {
+    logger.warn('SMTP credentials not configured — emails will not be sent (jsonTransport active)');
+    return nodemailer.createTransport({ jsonTransport: true });
   }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+    connectionTimeout: 10_000,
+    greetingTimeout:   5_000,
+    socketTimeout:     15_000,
+  });
 }
 
+const transporter = createTransporter();
+
+// Verify SMTP config at startup so misconfiguration surfaces immediately in logs.
+// Non-fatal: a verify failure logs a warning but does not crash the server.
+if (env.SMTP_USER && env.SMTP_PASS) {
+  transporter.verify()
+    .then(() => logger.info('SMTP ready', { user: env.SMTP_USER }))
+    .catch((err: unknown) =>
+      logger.warn('SMTP verify failed — check credentials and App Password', { err }),
+    );
+}
+
+// ── Core send helper ───────────────────────────────────────────────────────────
+// Throws on failure so call-site .catch() handlers in auth.service.ts work.
+async function send(to: string, subject: string, html: string): Promise<void> {
+  const info = await transporter.sendMail({
+    from: `"${env.EMAIL_FROM_NAME}" <${env.EMAIL_FROM}>`,
+    to,
+    subject,
+    html,
+  });
+  logger.debug('Email sent', { to, subject, messageId: info.messageId });
+}
+
+// ── Email templates ────────────────────────────────────────────────────────────
 export const emailService = {
   async sendVerification(email: string, name: string, token: string): Promise<void> {
     const url = `${env.FRONTEND_URL}/verify-email?token=${token}`;
