@@ -36,6 +36,6 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch((err) => {
-  console.error('Fatal startup error', err);
+  logger.error('Fatal startup error', { err });
   process.exit(1);
 });

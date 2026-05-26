@@ -6,7 +6,9 @@
       "Bash(Format-Table FullName)",
       "Bash(npm install *)",
       "Bash(npx prisma *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\kusha\\\\invoiceflow\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

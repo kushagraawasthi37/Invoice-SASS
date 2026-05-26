@@ -27,6 +27,9 @@ cjs/
 .env.local
 backend/.env
 frontend/.env
+frontend/.env.*
+
+*/.env.production
 
 # Logs
 npm-debug.log*

@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import passport from 'passport';
+import { randomBytes } from 'crypto';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { env } from './config/env';
 import { globalLimiter } from './middleware/rateLimiter';
@@ -65,9 +66,14 @@ export function createApp(): express.Application {
   // ── Static uploads (local fallback) ──────────────────────────
   app.use('/uploads', express.static('uploads'));
 
-  // ── Logging ───────────────────────────────────────────────────
-  app.use((req, _res, next) => {
-    logger.debug(`${req.method} ${req.url}`);
+  // ── Request logging ───────────────────────────────────────────
+  app.use((req, res, next) => {
+    const requestId = randomBytes(8).toString('hex');
+    const start = Date.now();
+    res.setHeader('X-Request-Id', requestId);
+    res.on('finish', () => {
+      logger.http(req.method, req.originalUrl || req.url, res.statusCode, Date.now() - start, requestId);
+    });
     next();
   });
 

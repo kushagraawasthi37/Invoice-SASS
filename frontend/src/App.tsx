@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } 
 import { useAuthStore } from '@/store/auth.store';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
+import { ToastContainer } from '@/components/common/ToastContainer';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
@@ -15,6 +16,10 @@ import { PurchaseOrdersPage } from '@/pages/purchase-orders/PurchaseOrdersPage';
 import { TemplatesPage } from '@/pages/templates/TemplatesPage';
 import { BillingPage } from '@/pages/billing/BillingPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
+
+const HEALTH_URL = (import.meta.env.VITE_API_URL || '/api/v1') + '/health';
+const PING_INTERVAL_MS = 5 * 60 * 1000;
 
 function AuthCallback() {
   const navigate = useNavigate();
@@ -78,16 +83,23 @@ function AppRoutes() {
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 
-      {/* Catch-all */}
-      <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+      {/* 404 */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
 
 export default function App() {
+  useEffect(() => {
+    const ping = () => fetch(HEALTH_URL, { method: 'GET' }).catch(() => {});
+    const id = setInterval(ping, PING_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <BrowserRouter>
       <AppRoutes />
+      <ToastContainer />
     </BrowserRouter>
   );
 }

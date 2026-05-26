@@ -17,6 +17,7 @@ import {
 import { emailService } from "./email.service";
 import { env } from "../config/env";
 import { getRedis } from "../config/redis";
+import { logger } from "../utils/logger";
 
 export interface RegisterInput {
   name: string;
@@ -113,7 +114,7 @@ export const authService = {
       });
       await emailService
         .sendVerification(existing.email, existing.name, emailVerifyToken)
-        .catch((err) => console.error("Verification email failed:", err));
+        .catch((err) => logger.error("Verification email failed", { err }));
       return { requiresVerification: true, email: existing.email, name: existing.name };
     }
 
@@ -134,7 +135,7 @@ export const authService = {
     await emailService
       .sendVerification(user.email, user.name, emailVerifyToken)
       .catch((err) => {
-        console.error("Verification email failed:", err);
+        logger.error("Verification email failed", { err });
       });
 
     return {
@@ -221,7 +222,7 @@ export const authService = {
 
     await emailService
       .sendVerification(user.email, user.name, emailVerifyToken)
-      .catch((err) => console.error("Resend verification failed:", err));
+      .catch((err) => logger.error("Resend verification failed", { err }));
 
     // Set cooldown (60s)
     await redis.set(cooldownKey, "1", "EX", RESEND_COOLDOWN_TTL);
@@ -281,7 +282,7 @@ export const authService = {
 
     await emailService
       .sendPasswordReset(user.email, user.name, resetToken)
-      .catch((err) => console.error("Reset email failed:", err));
+      .catch((err) => logger.error("Reset email failed", { err }));
   },
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
