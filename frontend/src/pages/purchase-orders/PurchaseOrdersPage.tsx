@@ -64,7 +64,7 @@ export function PurchaseOrdersPage() {
   });
 
   const pdfMutation = useMutation({
-    mutationFn: invoiceApi.downloadPdfStream,
+    mutationFn: (id: string) => invoiceApi.downloadPdfStream(id),
     onSuccess: (blob, id) => {
       const inv = data?.invoices.find((i) => i.id === id);
       const url = URL.createObjectURL(blob);
