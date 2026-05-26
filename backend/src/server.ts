@@ -18,7 +18,7 @@ async function bootstrap(): Promise<void> {
     server.close(async () => {
       await disconnectDatabase();
       logger.info('Server shut down');
-      process.exit(0);
+      process.exit(0);//
     });
     setTimeout(() => process.exit(1), 10000);
   };
