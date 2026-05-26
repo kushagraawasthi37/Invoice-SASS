@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2, Zap } from 'lucide-react';
@@ -12,8 +12,12 @@ export function VerifyEmailPage() {
   const navigate = useNavigate();
   const [state, setState] = useState<State>('verifying');
   const [errorMsg, setErrorMsg] = useState('');
+  const called = useRef(false);
 
   useEffect(() => {
+    if (called.current) return;
+    called.current = true;
+
     const token = searchParams.get('token');
     if (!token) {
       setState('error');

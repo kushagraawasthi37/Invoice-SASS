@@ -37,6 +37,12 @@ export function createApp(): express.Application {
   app.use(cookieParser());
   app.use(compression());
 
+  // ── Trust proxy ───────────────────────────────────────────────
+  // Render (and most PaaS platforms) sit behind a load balancer that injects
+  // X-Forwarded-For. Express must trust that first hop so express-rate-limit
+  // reads the real client IP instead of the proxy IP.
+  app.set('trust proxy', 1);
+
   // ── Rate limiting ─────────────────────────────────────────────
   app.use(globalLimiter);
 

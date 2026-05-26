@@ -29,6 +29,7 @@ const envSchema = z.object({
   AWS_REGION: z.string().default('ap-southeast-2'),
   AWS_S3_BUCKET: z.string().optional(),
 
+  SENDGRID_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().default('587').transform(Number),
   SMTP_USER: z.string().optional(),
