@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { PageHeader } from '@/components/common/PageHeader';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { formatMoney, formatDate, getStatusColor, getStatusLabel } from '@/lib/utils';
 
 const STATUS_OPTIONS = [
@@ -32,6 +33,7 @@ export function PurchaseOrdersPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('ALL');
   const [page, setPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['purchase-orders', { search, status, page }],
@@ -78,16 +80,22 @@ export function PurchaseOrdersPage() {
     onError: (err) => error('PDF failed', extractError(err)),
   });
 
-  const handleDelete = (id: string) => {
-    if (!confirm('Delete this purchase order? This cannot be undone.')) return;
-    deleteMutation.mutate(id);
-  };
+  const handleDelete = (id: string) => setDeleteTarget(id);
 
   const orders = (data?.invoices || []).filter((inv) => inv.type === 'PURCHASE_ORDER');
   const meta = data?.meta;
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete purchase order?"
+        description="This cannot be undone. The purchase order will be permanently removed."
+        confirmLabel="Delete"
+        onConfirm={() => deleteMutation.mutate(deleteTarget!)}
+        onClose={() => setDeleteTarget(null)}
+      />
+
       <PageHeader
         title="Purchase Orders"
         subtitle="Manage NDIS purchase orders and service agreements."

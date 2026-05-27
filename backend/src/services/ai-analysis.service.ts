@@ -257,6 +257,79 @@ const LABEL_TO_FIELD: Record<string, string> = {
   'ext': 'lineItems[].amount',
   'extension': 'lineItems[].amount',
   'charge': 'lineItems[].amount',
+  'amount aud': 'lineItems[].amount',
+  'total dollar': 'lineItems[].amount',
+  'rate dollar': 'lineItems[].rate',
+  // Provider / business extra variants
+  'provider org name': 'businessName',
+  'provider organisation name': 'businessName',
+  'provider organization name': 'businessName',
+  'provider support worker name': 'businessName',
+  'support worker name': 'businessName',
+  'vendor business name': 'businessName',
+  // Provider title / role
+  'title role': 'providerTitle',
+  'provider title': 'providerTitle',
+  'role': 'providerTitle',
+  // Client email
+  'participant email': 'clientEmail',
+  'participant email address': 'clientEmail',
+  'client email': 'clientEmail',
+  'client email address': 'clientEmail',
+  // Plan manager (fiscal agent)
+  'plan manager': 'fiscalAgent',
+  'plan manager if applicable': 'fiscalAgent',
+  // Service month
+  'service month': 'serviceMonth',
+  'month of service': 'serviceMonth',
+  'billing period': 'serviceMonth',
+  // BSB + account combined field
+  'bsb account number': 'bsbAccount',
+  'bsb account no': 'bsbAccount',
+  'bsb and account number': 'bsbAccount',
+  // Notes / additional info
+  'payment notes': 'notes',
+  'notes additional information': 'notes',
+  'payment notes special instructions': 'notes',
+  'additional information': 'notes',
+  'special instructions': 'notes',
+  // Vendor email
+  'vendor email address': 'providerEmail',
+  'vendor email': 'providerEmail',
+  // Support category / item (line-item description variants)
+  'support category': 'lineItems[].description',
+  'support cat': 'lineItems[].description',
+  'support item no': 'lineItems[].description',
+  'support item': 'lineItems[].description',
+  'description of service': 'lineItems[].description',
+  // Always skip — bank/payment details filled from template
+  'bank name': '_skip',
+  'bank': '_skip',
+  'bsb': '_skip',
+  'account no': '_skip',
+  'account number': '_skip',
+  'account name': '_skip',
+  'payment reference': '_skip',
+  'registration no': '_skip',
+  'registration number': '_skip',
+  'ndis registration no': '_skip',
+  'ndis reg no': '_skip',
+  'plan start': '_skip',
+  'plan end': '_skip',
+  'plan period start': '_skip',
+  'plan period end': '_skip',
+  'invoice status': '_skip',
+  'website': '_skip',
+  'gst status': '_skip',
+  'plan managed by': '_skip',
+  'ndis support purpose': '_skip',
+  'claiming period start': '_skip',
+  'claiming period end': '_skip',
+  'reference po': '_skip',
+  'line item code': '_skip',
+  'total hours': '_skip',
+  'participant phone': '_skip',
+  'participant phone number': '_skip',
 };
 
 // Labels that are always scalar totals — never line-item columns
@@ -297,7 +370,11 @@ const SEMANTIC_PENALTY_PAIRS: Array<[string, string]> = [
 export const SIMILARITY_THRESHOLD = 0.82;
 
 function normalizeText(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  return text.toLowerCase()
+    .replace(/\$/g, ' dollar ')
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function tokenize(text: string): string[] {
@@ -855,14 +932,19 @@ function heuristicMapTextLines(lines: ReconstructedLine[]): {
       (l) => l.page === line.page && Math.abs(l.y - line.y) < 5 && l.x > line.x + line.width,
     ).sort((a, b) => a.x - b.x);
 
+    const fillHeight = Math.max(8, line.height || 10);
     let fillX: number;
-    const fillY = line.y;
+    let fillY: number;
     const fillWidth = 180;
 
     if (sameLine.length > 0) {
+      // Value is to the right on the same line (after any existing text)
       fillX = sameLine[0].x + sameLine[0].width + 4;
+      fillY = line.y;
     } else {
-      fillX = line.x + line.width + 8;
+      // No same-line content — value goes BELOW the label (NDIS forms pattern)
+      fillX = line.x;
+      fillY = line.y - fillHeight - 6;
     }
 
     // Avoid duplicate mappedTo (keep highest confidence)
@@ -874,6 +956,7 @@ function heuristicMapTextLines(lines: ReconstructedLine[]): {
         existing.fillX = fillX;
         existing.fillY = fillY;
         existing.fillWidth = fillWidth;
+        existing.fillHeight = fillHeight;
         existing.page = line.page;
       }
       continue;
@@ -886,6 +969,7 @@ function heuristicMapTextLines(lines: ReconstructedLine[]): {
       fillX,
       fillY,
       fillWidth,
+      fillHeight,
       page: line.page,
       isLineItem: false,
     });
@@ -1018,10 +1102,11 @@ Field names: ${fieldNames.join(', ')}
 
 Available invoice fields:
 businessName, clientName, number, issueDate, dueDate, totalAmount, subtotal, gstAmount,
-providerABN, providerAddress, providerEmail, providerPhone, clientAddress, ndisNumber,
+providerABN, providerAddress, providerEmail, providerPhone, providerTitle,
+clientAddress, clientEmail, ndisNumber, fiscalAgent,
+serviceMonth, bsbAccount, notes, supportCoordinator, legalGuardian,
 lineItems[].description, lineItems[].serviceDate, lineItems[].startTime, lineItems[].endTime,
-lineItems[].hours, lineItems[].rate, lineItems[].amount,
-notes, supportCoordinator, legalGuardian, fiscalAgent
+lineItems[].hours, lineItems[].rate, lineItems[].amount
 
 Critical rules:
 - "Date", "Dates of Service", "Service Date" as TABLE COLUMN → lineItems[].serviceDate (NOT issueDate)
@@ -1078,8 +1163,9 @@ ${layout}
 
 TASK 1 — Scalar header fields (one value per invoice):
 businessName, clientName, number, issueDate, dueDate, totalAmount, subtotal, gstAmount,
-providerABN, providerAddress, providerEmail, providerPhone, clientAddress, ndisNumber,
-notes, supportCoordinator, legalGuardian, fiscalAgent
+providerABN, providerAddress, providerEmail, providerPhone, providerTitle,
+clientAddress, clientEmail, ndisNumber, fiscalAgent,
+serviceMonth, bsbAccount, notes, supportCoordinator, legalGuardian
 
 For each label found, determine where its VALUE should be drawn:
 - Value RIGHT of label on same line: fillX = label_x + label_width + 10, fillY = label_y

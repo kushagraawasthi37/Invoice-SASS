@@ -33,7 +33,7 @@ export function DownloadFormatDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o && !isDownloading) onClose(); }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm w-[min(theme(maxWidth.sm),calc(100vw-2rem))]">
         <DialogHeader>
           <DialogTitle>Choose download format</DialogTitle>
           <DialogDescription>
@@ -86,6 +86,13 @@ export function DownloadFormatDialog({
           </div>
         )}
 
+        {isDownloading && (
+          <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-1">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Generating PDF…
+          </p>
+        )}
+
         <Button
           variant="ghost"
           className="w-full mt-1 text-muted-foreground"
@@ -117,7 +124,7 @@ function FormatOption({
     <button
       type="button"
       className={cn(
-        'w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all',
+        'w-full min-w-0 overflow-hidden flex items-center gap-3 p-3 rounded-xl border text-left transition-all',
         'border-border hover:border-brand-400 hover:bg-brand-50/50',
         disabled && !isLoading && 'opacity-60 pointer-events-none',
         isLoading && 'border-brand-400 bg-brand-50',

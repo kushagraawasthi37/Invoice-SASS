@@ -42,6 +42,10 @@ async function buildInvoiceData(invoiceId: string, workspaceId: string): Promise
     supportCoordinator: invoice.supportCoordinator || '',
     legalGuardian: invoice.legalGuardian || '',
     fiscalAgent: invoice.fiscalAgent || '',
+    providerTitle: invoice.providerTitle || '',
+    clientEmail: invoice.clientEmail || '',
+    serviceMonth: invoice.serviceMonth || '',
+    bsbAccount: invoice.bsbAccount || '',
     lineItems: invoice.lineItems.map((li) => ({
       description: li.description || '',
       serviceDate: li.serviceDate?.toLocaleDateString('en-AU') ?? '',

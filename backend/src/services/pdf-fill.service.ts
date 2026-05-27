@@ -31,6 +31,10 @@ export interface InvoiceData {
   supportCoordinator: string;
   legalGuardian: string;
   fiscalAgent: string;
+  providerTitle: string;
+  clientEmail: string;
+  serviceMonth: string;
+  bsbAccount: string;
   lineItems: Array<{
     description: string;
     serviceDate: string;
@@ -64,6 +68,10 @@ function getFieldValue(mappedTo: string, data: InvoiceData): string {
     supportCoordinator: data.supportCoordinator,
     legalGuardian: data.legalGuardian,
     fiscalAgent: data.fiscalAgent,
+    providerTitle: data.providerTitle,
+    clientEmail: data.clientEmail,
+    serviceMonth: data.serviceMonth,
+    bsbAccount: data.bsbAccount,
   };
   return map[mappedTo] ?? '';
 }
@@ -170,9 +178,10 @@ async function fillFlatPdf(
     width: number,
     value: string,
     useBold = false,
+    baseSize = nominalSize,
   ) => {
     const f = useBold ? boldFont : font;
-    const fs = fitFontSize(f, value, width, nominalSize);
+    const fs = fitFontSize(f, value, width, baseSize);
     const maxChars = Math.max(4, Math.floor(width / (fs * 0.58)));
     const txt = truncate(value, maxChars);
 
@@ -223,6 +232,7 @@ async function fillFlatPdf(
       );
 
       let currentY = tableConfig.firstRowY;
+      const tableFontSize = Math.max(7, Math.min(10, Math.floor(tableConfig.rowHeight * 0.6)));
 
       for (let rowIdx = 0; rowIdx < Math.min(data.lineItems.length, maxRows); rowIdx++) {
         // Safety check: stop before we'd collide with totals or page edge
@@ -235,7 +245,7 @@ async function fillFlatPdf(
         for (const col of tableConfig.columns) {
           page.drawRectangle({
             x: col.x - 2,
-            y: currentY - rh + nominalSize + 2,
+            y: currentY - rh + tableFontSize + 2,
             width: col.width + 4,
             height: rh,
             color: rgb(1, 1, 1),
@@ -249,7 +259,7 @@ async function fillFlatPdf(
           const value = String(lineItem[colKey] ?? '');
           if (!value) continue;
 
-          const fs = fitFontSize(font, value, col.width, nominalSize);
+          const fs = fitFontSize(font, value, col.width, tableFontSize);
           const maxChars = Math.max(4, Math.floor(col.width / (fs * 0.58)));
 
           page.drawText(
@@ -291,7 +301,8 @@ async function fillFlatPdf(
     // Skip if fill position is outside reasonable page bounds
     if (mapping.fillY < 5 || mapping.fillY > pageHeight - 5) continue;
 
-    fillCell(page, mapping.fillX, mapping.fillY, mapping.fillWidth ?? 180, value);
+    const baseSize = Math.max(7, Math.min(12, mapping.fillHeight ?? nominalSize));
+    fillCell(page, mapping.fillX, mapping.fillY, mapping.fillWidth ?? 180, value, false, baseSize);
   }
 
   void boldFont;

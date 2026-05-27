@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Plus, Search, Download, Edit, Copy, Trash2, FileText,
-  ChevronLeft, ChevronRight, AlertCircle, Crown,
+  ChevronLeft, ChevronRight, AlertCircle, Crown, Loader2,
 } from 'lucide-react';
 import { invoiceApi, PaymentRequiredError } from '@/api/invoice.api';
 import { paymentApi } from '@/api/payment.api';
@@ -18,6 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { PageHeader } from '@/components/common/PageHeader';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DownloadFormatDialog } from '@/components/invoices/DownloadFormatDialog';
 import { formatMoney, formatDate, getStatusColor, getStatusLabel } from '@/lib/utils';
 
@@ -41,6 +42,7 @@ export function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [dialogInvoice, setDialogInvoice] = useState<{ id: string; number: string } | null>(null);
   const [downloadingTemplateId, setDownloadingTemplateId] = useState<string | null | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoices', { search, status, page }],
@@ -120,10 +122,7 @@ export function InvoicesPage() {
     },
   });
 
-  const handleDelete = (id: string) => {
-    if (!confirm('Delete this invoice? This cannot be undone.')) return;
-    deleteMutation.mutate(id);
-  };
+  const handleDelete = (id: string) => setDeleteTarget(id);
 
   const handleDownloadClick = (inv: { id: string; number: string }) => {
     if (pdfLimitReached) {
@@ -291,11 +290,17 @@ export function InvoicesPage() {
                           <Button
                             variant="ghost" size="sm"
                             className={`h-7 w-7 p-0 ${pdfLimitReached ? 'opacity-40' : ''}`}
-                            title={pdfLimitReached ? 'PDF limit reached — upgrade to Pro' : 'Download PDF'}
+                            title={
+                              pdfLimitReached ? 'PDF limit reached — upgrade to Pro'
+                              : pdfMutation.isPending && pdfMutation.variables?.id === inv.id ? 'Downloading…'
+                              : 'Download PDF'
+                            }
                             onClick={() => handleDownloadClick({ id: inv.id, number: inv.number })}
-                            disabled={pdfMutation.isPending && pdfMutation.variables?.id === inv.id}
+                            disabled={pdfMutation.isPending}
                           >
-                            <Download className="w-3.5 h-3.5" />
+                            {pdfMutation.isPending && pdfMutation.variables?.id === inv.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Download className="w-3.5 h-3.5" />}
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Duplicate"
                             onClick={() => duplicateMutation.mutate(inv.id)}>
@@ -335,6 +340,16 @@ export function InvoicesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete invoice?"
+        description="This cannot be undone. The invoice will be permanently removed."
+        confirmLabel="Delete"
+        onConfirm={() => deleteMutation.mutate(deleteTarget!)}
+        onClose={() => setDeleteTarget(null)}
+      />
 
       {/* Download format dialog */}
       <DownloadFormatDialog

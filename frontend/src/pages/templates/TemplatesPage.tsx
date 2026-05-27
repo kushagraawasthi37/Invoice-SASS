@@ -16,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/common/PageHeader';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { cn } from '@/lib/utils';
 import { Template, TemplateAnalysisStatus, FieldMapping } from '@/types';
 
@@ -365,6 +366,7 @@ export function TemplatesPage() {
   const queryClient = useQueryClient();
   const { success, error } = useToast();
   const [showUpload, setShowUpload] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['templates'],
@@ -383,11 +385,20 @@ export function TemplatesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: templateApi.delete,
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['templates'] });
+      const prev = queryClient.getQueryData<Template[]>(['templates']);
+      queryClient.setQueryData<Template[]>(['templates'], (old) => old?.filter((t) => t.id !== id) ?? []);
+      return { prev };
+    },
+    onError: (err, _id, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['templates'], ctx.prev);
+      error('Delete failed', extractError(err));
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
       success('Template deleted');
     },
-    onError: (err) => error('Delete failed', extractError(err)),
   });
 
   const reanalyzeMutation = useMutation({
@@ -416,6 +427,15 @@ export function TemplatesPage() {
       <AnimatePresence>
         {showUpload && <UploadDialog onClose={() => setShowUpload(false)} onUploaded={handleUploaded} />}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete template?"
+        description="This will permanently remove the template and its field mappings. This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => deleteMutation.mutate(deleteTarget!)}
+        onClose={() => setDeleteTarget(null)}
+      />
 
       <PageHeader
         title="PDF Templates"
@@ -511,7 +531,7 @@ export function TemplatesPage() {
                     <motion.div key={tmpl.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
                       <TemplateCard
                         tmpl={tmpl}
-                        onDelete={() => deleteMutation.mutate(tmpl.id)}
+                        onDelete={() => setDeleteTarget(tmpl.id)}
                         onReanalyze={() => reanalyzeMutation.mutate(tmpl.id)}
                       />
                     </motion.div>
